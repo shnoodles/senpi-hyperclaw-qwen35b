@@ -1,5 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
+import {
+  DESIRED_MODELS,
+  PROVIDER_DEFAULTS,
+  AI_PROVIDER_MODEL_MAP,
+} from "./lib/models.js";
 
 const STATE_DIR = process.env.OPENCLAW_STATE_DIR || "/data/.openclaw";
 const WORKSPACE_DIR = process.env.OPENCLAW_WORKSPACE_DIR || "/data/workspace";
@@ -93,7 +98,7 @@ function patchOpenClawJson() {
         enabled: true,
         dmPolicy: "open",
         allowFrom: ["*"],
-        streamMode: "partial",
+        streamMode: "block",
         blockStreaming: true,
       },
     },
@@ -116,98 +121,6 @@ function patchOpenClawJson() {
 
   const merged = deepMerge(cfg, patch);
 
-  // Comprehensive model allowlist — users can /model switch without "not allowed" errors.
-  // Only requires the provider's API key to actually use a model.
-  const DESIRED_MODELS = {
-    // ── Anthropic ──
-    "anthropic/claude-opus-4-6": { alias: "Opus 4.6" },
-    "anthropic/claude-sonnet-4-6": { alias: "Sonnet 4.6" },
-    "anthropic/claude-sonnet-4-5": { alias: "Sonnet 4.5" },
-    "anthropic/claude-opus-4-5": { alias: "Opus 4.5" },
-    "anthropic/claude-haiku-4-5": { alias: "Haiku 4.5" },
-    "anthropic/claude-haiku-3-5": { alias: "Haiku 3.5" },
-    "anthropic/claude-sonnet-4": { alias: "Sonnet 4" },
-    "anthropic/claude-opus-4": { alias: "Opus 4" },
-    // ── OpenAI (API key) ──
-    "openai/gpt-5.2": { alias: "GPT-5.2" },
-    "openai/gpt-5.1-codex": { alias: "GPT-5.1 Codex" },
-    "openai/gpt-4.1": { alias: "GPT-4.1" },
-    "openai/gpt-4.1-mini": { alias: "GPT-4.1 Mini" },
-    "openai/gpt-4o": { alias: "GPT-4o" },
-    "openai/gpt-4o-mini": { alias: "GPT-4o Mini" },
-    "openai/o3": { alias: "o3" },
-    "openai/o3-mini": { alias: "o3 Mini" },
-    "openai/o4-mini": { alias: "o4 Mini" },
-    // ── OpenAI Codex (subscription/OAuth) ──
-    "openai-codex/gpt-5.3-codex": { alias: "GPT-5.3 Codex" },
-    // ── Google Gemini ──
-    "google/gemini-3.1-pro-preview": { alias: "Gemini 3.1 Pro" },
-    "google/gemini-3-flash-preview": { alias: "Gemini 3 Flash" },
-    "google/gemini-3.1-flash-lite-preview": { alias: "Gemini 3.1 Flash Lite" },
-    "google/gemini-2.5-pro": { alias: "Gemini 2.5 Pro" },
-    "google/gemini-2.5-flash": { alias: "Gemini 2.5 Flash" },
-    "google/gemini-2.5-flash-lite": { alias: "Gemini 2.5 Flash Lite" },
-    // ── Google Gemini (Specialized) ──
-    "google/gemini-2.5-flash-image": { alias: "Gemini 2.5 Flash Image" },
-    "google/gemini-3.1-flash-image-preview": { alias: "Gemini 3.1 Flash Image" },
-    "google/gemini-3-pro-image-preview": { alias: "Gemini 3 Pro Image" },
-    "google/gemini-2.5-flash-native-audio-preview-12-2025": { alias: "Gemini 2.5 Flash Audio" },
-    "google/gemini-2.5-flash-preview-tts": { alias: "Gemini 2.5 Flash TTS" },
-    "google/gemini-2.5-pro-preview-tts": { alias: "Gemini 2.5 Pro TTS" },
-    "google/gemini-2.5-computer-use-preview-10-2025": { alias: "Gemini 2.5 Computer Use" },
-    "google/gemini-embedding-001": { alias: "Gemini Embedding" },
-    "google/gemini-robotics-er-1.5-preview": { alias: "Gemini Robotics ER" },
-    "google/deep-research-pro-preview-12-2025": { alias: "Deep Research Pro" },
-    "google/imagen-4": { alias: "Imagen 4" },
-    "google/veo-3.1-generate-preview": { alias: "Veo 3.1" },
-    "google/lyria-realtime-exp": { alias: "Lyria Realtime" },
-    // ── xAI ──
-    "xai/grok-3": { alias: "Grok 3" },
-    "xai/grok-3-mini": { alias: "Grok 3 Mini" },
-    // ── Groq ──
-    "groq/llama-3.3-70b": { alias: "Llama 3.3 70B (Groq)" },
-    // ── Mistral ──
-    "mistral/mistral-large-latest": { alias: "Mistral Large" },
-    "mistral/codestral-latest": { alias: "Codestral" },
-    // ── Together AI ──
-    "together/moonshotai/Kimi-K2.5": { alias: "Kimi K2.5 (Together)" },
-    "together/meta-llama/llama-3.3-70b-instruct-turbo": { alias: "Llama 3.3 70B (Together)" },
-    "together/deepseek/deepseek-r1": { alias: "DeepSeek R1 (Together)" },
-    // ── Z.AI / GLM ──
-    "zai/glm-5": { alias: "GLM-5" },
-    "zai/glm-4.7": { alias: "GLM-4.7" },
-    "zai/glm-4.6": { alias: "GLM-4.6" },
-    // ── Moonshot AI (Kimi) ──
-    "moonshot/kimi-k2.5": { alias: "Kimi K2.5" },
-    "moonshot/kimi-k2-thinking": { alias: "Kimi K2 Thinking" },
-    "moonshot/kimi-k2-thinking-turbo": { alias: "Kimi K2 Thinking Turbo" },
-    // ── Venice AI (privacy-focused) ──
-    "venice/llama-3.3-70b": { alias: "Llama 3.3 70B (Venice)" },
-    "venice/claude-opus-45": { alias: "Opus 4.5 (Venice)" },
-    "venice/claude-sonnet-45": { alias: "Sonnet 4.5 (Venice)" },
-    "venice/openai-gpt-52": { alias: "GPT-5.2 (Venice)" },
-    "venice/deepseek-v3.2": { alias: "DeepSeek V3.2 (Venice)" },
-    "venice/qwen3-coder-480b-a35b-instruct": { alias: "Qwen3 Coder (Venice)" },
-    "venice/kimi-k2-5": { alias: "Kimi K2.5 (Venice)" },
-    // ── MiniMax ──
-    "minimax/MiniMax-M2.1": { alias: "MiniMax M2.1" },
-    "minimax/MiniMax-M2.1-lightning": { alias: "MiniMax M2.1 Lightning" },
-    // ── NVIDIA ──
-    "nvidia/nvidia/llama-3.1-nemotron-70b-instruct": { alias: "Nemotron 70B" },
-    "nvidia/meta/llama-3.3-70b-instruct": { alias: "Llama 3.3 70B (NVIDIA)" },
-    // ── OpenRouter (proxy — prefix with openrouter/) ──
-    "openrouter/anthropic/claude-sonnet-4-5": { alias: "Sonnet 4.5 (OpenRouter)" },
-    "openrouter/openai/gpt-4.1": { alias: "GPT-4.1 (OpenRouter)" },
-    "openrouter/deepseek/deepseek-chat": { alias: "DeepSeek Chat (OpenRouter)" },
-    "openrouter/google/gemini-2.5-pro": { alias: "Gemini 2.5 Pro (OpenRouter)" },
-    // ── OpenCode Zen ──
-    "opencode/claude-opus-4-6": { alias: "Opus 4.6 (OpenCode)" },
-    // ── Hugging Face ──
-    "huggingface/deepseek-ai/DeepSeek-R1": { alias: "DeepSeek R1 (HF)" },
-    // ── Amazon Bedrock ──
-    "amazon-bedrock/anthropic.claude-opus-4-6": { alias: "Opus 4.6 (Bedrock)" },
-    "amazon-bedrock/anthropic.claude-sonnet-4-6": { alias: "Sonnet 4.6 (Bedrock)" },
-  };
   merged.agents = merged.agents || {};
   merged.agents.defaults = merged.agents.defaults || {};
   const existingModels =
@@ -216,40 +129,10 @@ function patchOpenClawJson() {
     !Array.isArray(merged.agents.defaults.models)
       ? merged.agents.defaults.models
       : {};
-  // User customizations (e.g. cacheRetention, temperature) take precedence.
   merged.agents.defaults.models = { ...DESIRED_MODELS, ...existingModels };
 
-  // Set default primary model based on which provider API key is configured.
-  // Check provider-specific env vars first, then fall back to AI_PROVIDER.
-  const PROVIDER_DEFAULTS = [
-    { key: "ANTHROPIC_API_KEY", model: "anthropic/claude-opus-4-6" },
-    { key: "OPENAI_API_KEY", model: "openai/gpt-5.2" },
-    { key: "GEMINI_API_KEY", model: "google/gemini-3.1-pro-preview" },
-    { key: "XAI_API_KEY", model: "xai/grok-3" },
-    { key: "MISTRAL_API_KEY", model: "mistral/mistral-large-latest" },
-    { key: "GROQ_API_KEY", model: "groq/llama-3.3-70b" },
-    { key: "TOGETHER_API_KEY", model: "together/moonshotai/Kimi-K2.5" },
-    { key: "ZAI_API_KEY", model: "zai/glm-5" },
-    { key: "MOONSHOT_API_KEY", model: "moonshot/kimi-k2.5" },
-    { key: "VENICE_API_KEY", model: "venice/llama-3.3-70b" },
-    { key: "OPENROUTER_API_KEY", model: "openrouter/anthropic/claude-sonnet-4-5" },
-  ];
   const available = PROVIDER_DEFAULTS.filter((p) => process.env[p.key]?.trim());
 
-  // Fallback: if no provider-specific key matched but AI_PROVIDER + AI_API_KEY
-  // are set (used by auto-onboard), pick the model from AI_PROVIDER.
-  const AI_PROVIDER_MODEL_MAP = {
-    anthropic: "anthropic/claude-opus-4-6",
-    openai: "openai/gpt-5.2",
-    gemini: "google/gemini-3.1-pro-preview",
-    google: "google/gemini-3.1-pro-preview",
-    openrouter: "openrouter/anthropic/claude-sonnet-4-5",
-    moonshot: "moonshot/kimi-k2.5",
-    zai: "zai/glm-5",
-    mistral: "mistral/mistral-large-latest",
-    minimax: "minimax/MiniMax-M2.1",
-    venice: "venice/llama-3.3-70b",
-  };
   if (available.length === 0 && process.env.AI_PROVIDER?.trim() && process.env.AI_API_KEY?.trim()) {
     const aiModel = AI_PROVIDER_MODEL_MAP[process.env.AI_PROVIDER.trim().toLowerCase()];
     if (aiModel) available.push({ key: "AI_API_KEY", model: aiModel });

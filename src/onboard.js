@@ -16,6 +16,8 @@ import {
   configPath,
   isConfigured,
   PROVIDER_TO_AUTH_CHOICE,
+  PROVIDERS_WITHOUT_API_KEY,
+  resolveEffectiveApiKey,
   INTERNAL_GATEWAY_PORT,
   OPENCLAW_NODE,
 } from "./lib/config.js";
@@ -38,7 +40,7 @@ export function isOnboardingInProgress() {
 export function envFingerprintForOnboard() {
   const payload = {
     AI_PROVIDER,
-    AI_API_KEY,
+    effectiveKey: resolveEffectiveApiKey(),
     TELEGRAM_BOT_TOKEN,
     TELEGRAM_USERNAME,
     SENPI_AUTH_TOKEN: process.env.SENPI_AUTH_TOKEN?.trim() || "",
@@ -60,11 +62,14 @@ export function shouldReOnboardDueToEnvChange() {
 }
 
 export function canAutoOnboard() {
+  const knownProvider = !!PROVIDER_TO_AUTH_CHOICE[AI_PROVIDER];
+  const needsKey = !PROVIDERS_WITHOUT_API_KEY.has(AI_PROVIDER);
+  const effectiveKey = resolveEffectiveApiKey();
   return (
     !isConfigured() &&
     AI_PROVIDER &&
-    AI_API_KEY &&
-    !!PROVIDER_TO_AUTH_CHOICE[AI_PROVIDER]
+    knownProvider &&
+    (needsKey ? !!effectiveKey : true)
   );
 }
 
@@ -283,6 +288,7 @@ export function buildOnboardArgs(payload, gatewayToken) {
       "kimi-code-api-key": "--kimi-code-api-key",
       "gemini-api-key": "--gemini-api-key",
       "zai-api-key": "--zai-api-key",
+      "venice-api-key": "--venice-api-key",
       "minimax-api": "--minimax-api-key",
       "minimax-api-lightning": "--minimax-api-key",
       "synthetic-api-key": "--synthetic-api-key",
@@ -338,16 +344,20 @@ export async function autoOnboard(gatewayToken) {
     fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
 
     const authChoice = PROVIDER_TO_AUTH_CHOICE[AI_PROVIDER];
+    const effectiveKey = resolveEffectiveApiKey();
     const payload = {
       flow: "quickstart",
       authChoice,
-      authSecret: AI_API_KEY,
+      authSecret: effectiveKey,
     };
+
+    console.log(`[auto-onboard] authChoice: ${authChoice}`);
+    console.log(`[auto-onboard] effectiveKey source: ${AI_API_KEY ? "AI_API_KEY" : effectiveKey ? "provider-specific env var" : "none"}`);
 
     const onboardArgs = buildOnboardArgs(payload, gatewayToken);
     const autoOnboardCmdForLog = onboardArgs
       .join(" ")
-      .replace(AI_API_KEY, "***")
+      .replace(effectiveKey || "___NOKEY___", "***")
       .replace(gatewayToken, "<redacted>");
     console.log(`[auto-onboard] Running: openclaw ${autoOnboardCmdForLog}`);
 
@@ -463,7 +473,7 @@ export async function autoOnboard(gatewayToken) {
           allowFrom: ["*"],
           botToken: TELEGRAM_BOT_TOKEN,
           groupPolicy: "allowlist",
-          streamMode: "partial",
+          streamMode: "block",
           blockStreaming: true,
         };
         const set = await runCmd(

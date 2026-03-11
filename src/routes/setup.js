@@ -56,7 +56,7 @@ const AUTH_GROUPS = [
   {
     value: "google",
     label: "Google",
-    hint: "Gemini API key + OAuth",
+    hint: "Gemini API key + Vertex AI + OAuth",
     options: [
       { value: "gemini-api-key", label: "Google Gemini API key" },
       { value: "google-antigravity", label: "Google Antigravity OAuth" },
@@ -115,6 +115,12 @@ const AUTH_GROUPS = [
       { value: "github-copilot", label: "GitHub Copilot (GitHub device login)" },
       { value: "copilot-proxy", label: "Copilot Proxy (local)" },
     ],
+  },
+  {
+    value: "venice",
+    label: "Venice AI",
+    hint: "Private & uncensored models",
+    options: [{ value: "venice-api-key", label: "Venice AI API key" }],
   },
   {
     value: "synthetic",
@@ -344,7 +350,7 @@ export function createSetupRouter() {
               dmPolicy: "pairing",
               botToken: token,
               groupPolicy: "allowlist",
-              streamMode: "partial",
+              streamMode: "block",
             };
             const set = await runCmd(
               OPENCLAW_NODE,

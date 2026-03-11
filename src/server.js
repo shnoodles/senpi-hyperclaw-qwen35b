@@ -10,6 +10,10 @@ import {
   configPath,
   isConfigured,
   SETUP_PASSWORD,
+  AI_PROVIDER,
+  AI_API_KEY,
+  PROVIDER_TO_AUTH_CHOICE,
+  resolveEffectiveApiKey,
 } from "./lib/config.js";
 import { resolveGatewayToken } from "./lib/auth.js";
 import { getGatewayProcess, restartGateway } from "./gateway.js";
@@ -63,6 +67,13 @@ const server = app.listen(PORT, () => {
   console.log(`[wrapper] listening on port ${PORT}`);
   console.log(`[wrapper] setup wizard: http://localhost:${PORT}/setup`);
   console.log(`[wrapper] configured: ${isConfigured()}`);
+  const effectiveKey = resolveEffectiveApiKey();
+  console.log(`[wrapper] AI_PROVIDER: ${AI_PROVIDER ? `"${AI_PROVIDER}"` : "(not set)"}`);
+  console.log(`[wrapper] AI_API_KEY: ${AI_API_KEY ? `set (${AI_API_KEY.length} chars)` : "(not set)"}`);
+  if (!AI_API_KEY && effectiveKey) {
+    console.log(`[wrapper] Effective key: resolved from provider env var (${effectiveKey.length} chars)`);
+  }
+  console.log(`[wrapper] canAutoOnboard: ${canAutoOnboard()}`);
 
   if (isConfigured() && shouldReOnboardDueToEnvChange()) {
     console.log(
@@ -99,6 +110,32 @@ const server = app.listen(PORT, () => {
     restartGateway(OPENCLAW_GATEWAY_TOKEN).catch((err) => {
       console.error(`[wrapper] Gateway startup failed: ${err}`);
     });
+  } else {
+    // Not configured and can't auto-onboard — explain why.
+    console.log("[wrapper] ================================================================");
+    console.log("[wrapper] Not configured and auto-onboard is not possible.");
+    if (!AI_PROVIDER) {
+      console.log("[wrapper]   ✗ AI_PROVIDER is not set");
+    } else if (!PROVIDER_TO_AUTH_CHOICE[AI_PROVIDER]) {
+      console.log(`[wrapper]   ✗ AI_PROVIDER="${AI_PROVIDER}" is not a recognized provider`);
+      console.log(`[wrapper]     Supported: ${Object.keys(PROVIDER_TO_AUTH_CHOICE).join(", ")}`);
+    } else {
+      console.log(`[wrapper]   ✓ AI_PROVIDER="${AI_PROVIDER}"`);
+    }
+    if (!AI_API_KEY && !effectiveKey) {
+      console.log("[wrapper]   ✗ AI_API_KEY is not set (no provider-specific key found either)");
+    } else if (!AI_API_KEY && effectiveKey) {
+      console.log(`[wrapper]   ~ AI_API_KEY is not set, but provider key found (${effectiveKey.length} chars)`);
+    } else {
+      console.log("[wrapper]   ✓ AI_API_KEY is set");
+    }
+    if (SETUP_PASSWORD) {
+      console.log("[wrapper] → Visit /setup to configure manually");
+    } else {
+      console.log("[wrapper]   ✗ SETUP_PASSWORD is not set (/setup is disabled)");
+      console.log("[wrapper] → Set AI_PROVIDER + AI_API_KEY, or set SETUP_PASSWORD to use the setup wizard");
+    }
+    console.log("[wrapper] ================================================================");
   }
 });
 

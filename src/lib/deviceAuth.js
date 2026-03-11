@@ -8,6 +8,7 @@ import { runCmd } from "./runCmd.js";
 
 let _loopRunning = false;
 let _timer = null;
+let _consecutiveFailures = 0;
 
 // Burst phase: aggressive polling for the first ~60s after gateway start,
 // then settle into a steady cadence for ongoing maintenance.
@@ -15,6 +16,24 @@ const BURST_INTERVALS_MS = [
   3_000, 3_000, 4_000, 5_000, 5_000, 10_000, 15_000, 15_000,
 ];
 const STEADY_INTERVAL_MS = 60_000;
+
+const GATEWAY_NOT_READY_PATTERNS = [
+  "gateway connect failed",
+  "gateway closed",
+  "abnormal closure",
+  "1006",
+  "1008",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "Failed to start CLI",
+  "connect failed",
+  "no close reason",
+];
+
+function isGatewayNotReady(output) {
+  const text = (output || "").toLowerCase();
+  return GATEWAY_NOT_READY_PATTERNS.some((p) => text.includes(p.toLowerCase()));
+}
 
 /**
  * List pending loopback operator devices and approve ALL of them.
@@ -26,14 +45,30 @@ export async function autoApprovePendingOperatorDevices() {
   try {
     const list = await runCmd("openclaw", ["devices", "list", "--json"]);
     if (list.code !== 0) {
-      // Non-zero exit is expected while gateway is still booting; only log
-      // once to avoid noisy logs.
-      if (!list.output.includes("gateway connect failed")) {
+      _consecutiveFailures++;
+      if (isGatewayNotReady(list.output)) {
+        if (_consecutiveFailures === 1) {
+          console.log(
+            "[deviceAuth] Gateway not reachable yet, will retry silently"
+          );
+        }
+      } else if (_consecutiveFailures <= 3) {
         console.log(
-          `[deviceAuth] devices list failed: exit=${list.code} output=${list.output.trim()}`
+          `[deviceAuth] devices list failed: exit=${list.code} output=${list.output.trim().slice(0, 200)}`
+        );
+      } else if (_consecutiveFailures === 4) {
+        console.log(
+          `[deviceAuth] devices list still failing (${_consecutiveFailures} consecutive), suppressing further logs`
         );
       }
       return 0;
+    }
+
+    if (_consecutiveFailures > 0) {
+      console.log(
+        `[deviceAuth] devices list recovered after ${_consecutiveFailures} failure(s)`
+      );
+      _consecutiveFailures = 0;
     }
 
     let devices;
@@ -116,6 +151,7 @@ export async function autoApprovePendingOperatorDevices() {
 export function startAutoApprovalLoop() {
   if (_loopRunning) return;
   _loopRunning = true;
+  _consecutiveFailures = 0;
 
   let burstIndex = 0;
 
@@ -148,6 +184,7 @@ export function startAutoApprovalLoop() {
  */
 export function stopAutoApprovalLoop() {
   _loopRunning = false;
+  _consecutiveFailures = 0;
   if (_timer) {
     clearTimeout(_timer);
     _timer = null;
