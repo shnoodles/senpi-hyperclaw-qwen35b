@@ -77,9 +77,9 @@ RUN npm install -g mcporter@0.7.3 mcp-remote@0.1.38
 # Copy built openclaw
 COPY --from=openclaw-build /openclaw /openclaw
 
-# Install senpi trading-runtime into /openclaw/extensions so it appears as "stock:" like other
-# bundled plugins (source root stock: = /openclaw/extensions). Install deps inside the plugin
-# dir so runtime can require('yaml') etc. (copying only the package loses flattened deps.)
+# Install senpi trading-runtime into /openclaw/extensions. When OPENCLAW_STATE_DIR is not set
+# we use this path only (like today). When set, bootstrap seeds into STATE_DIR/extensions and
+# prefers that via plugins.load.paths so one copy wins and "openclaw plugins install" upgrades it.
 RUN cd /tmp \
   && echo '{"name":"plugin-install","dependencies":{"@senpi/trading-runtime":"latest"}}' > package.json \
   && npm install --omit=dev \

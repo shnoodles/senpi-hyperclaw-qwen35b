@@ -21,6 +21,9 @@ const SENPI_TOKEN_FILE = path.join(STATE_DIR, "config", "senpi.token");
 const IMAGE_SKILLS_DIR = "/opt/openclaw-skills";
 const STATE_SKILLS_DIR = path.join(STATE_DIR, "skills");
 
+/** When OPENCLAW_STATE_DIR is set we seed plugins here; when unset we use /openclaw/extensions (bundled) only. */
+const BUNDLED_EXTENSIONS_DIR = "/openclaw/extensions";
+
 function ensureDir(p) {
   fs.mkdirSync(p, { recursive: true });
 }
@@ -169,6 +172,16 @@ function patchOpenClawJson() {
   };
 
   const merged = deepMerge(cfg, patch);
+
+  // When OPENCLAW_STATE_DIR is set, prefer STATE_DIR/extensions so one copy wins (no duplication with bundled)
+  const stateDirSet = process.env.OPENCLAW_STATE_DIR?.trim();
+  if (stateDirSet) {
+    merged.plugins = merged.plugins || {};
+    merged.plugins.load = merged.plugins.load || {};
+    const paths = Array.isArray(merged.plugins.load.paths) ? merged.plugins.load.paths : [];
+    const stateExt = path.join(STATE_DIR, "extensions");
+    if (!paths.includes(stateExt)) merged.plugins.load.paths = [...paths, stateExt];
+  }
 
   // If trading-runtime is disabled, remove it so config stays valid when plugin is not in image
   if (process.env.SENPI_TRADING_RUNTIME_ENABLED === "false" && merged.plugins?.entries) {
@@ -326,6 +339,16 @@ export function bootstrapOpenClaw() {
     path.join(IMAGE_SKILLS_DIR, "mcporter"),
     path.join(STATE_SKILLS_DIR, "mcporter"),
   );
+
+  // When OPENCLAW_STATE_DIR is set: seed trading-runtime from /openclaw/extensions into state dir
+  // (only if not present) so upgrades via "openclaw plugins install" update one copy. When
+  // OPENCLAW_STATE_DIR is not set we use /openclaw/extensions only (no seeding).
+  const stateExtensionsDir = path.join(STATE_DIR, "extensions");
+  const tradingRuntimeBundled = path.join(BUNDLED_EXTENSIONS_DIR, "trading-runtime");
+  if (process.env.OPENCLAW_STATE_DIR?.trim() && exists(tradingRuntimeBundled)) {
+    ensureDir(stateExtensionsDir);
+    copyDirIfMissing(tradingRuntimeBundled, path.join(stateExtensionsDir, "trading-runtime"));
+  }
 
   ensureSenpiStateFile();
   writeMcporterConfig();
