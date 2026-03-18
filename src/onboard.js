@@ -136,6 +136,7 @@ export async function resolveTelegramAndWriteUserMd() {
           `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?limit=100`
         );
         const updates = await updatesRes.json();
+        console.log(`[telegram] updates: ${JSON.stringify(updates)}`);
         updateList = (updates.ok && updates.result) || [];
         console.log(`[telegram] updateList: ${JSON.stringify(updateList)}`);
         for (const update of updateList) {
