@@ -103,7 +103,7 @@ export async function resolveTelegramAndWriteUserMd() {
     if (telegramSectionEnd !== -1) {
       existingExtra = existing.slice(telegramSectionEnd);
     }
-  } catch {
+  } catch (err) {
     console.warn(`[telegram] Error reading USER.md: ${err.message}`);
     // No existing USER.md
   }
