@@ -118,7 +118,7 @@ function patchOpenClawJson() {
     : [];
   const bootstrapPluginAllow =
     process.env.SENPI_TRADING_RUNTIME_ENABLED !== "false"
-      ? ["telegram", "trading-recipe"]
+      ? ["telegram", "llm-task", "trading-recipe"]
       : ["telegram"];
   let pluginsAllow = [...new Set([...existingPluginAllow, ...bootstrapPluginAllow])];
   // Match entries cleanup: do not keep trading-recipe in allow when runtime is disabled.
@@ -216,6 +216,7 @@ function patchOpenClawJson() {
         const entries = { telegram: { enabled: true } };
         // Only add trading-recipe if enabled (set SENPI_TRADING_RUNTIME_ENABLED=false to omit when plugin is not in image)
         if (process.env.SENPI_TRADING_RUNTIME_ENABLED !== "false") {
+          entries["llm-task"] = { enabled: true };
           entries["trading-recipe"] = {
             enabled: true,
             config: {
@@ -423,11 +424,9 @@ function installTradingRecipePluginIfNeeded() {
   if (process.env.SENPI_TRADING_RUNTIME_ENABLED === "false") return;
   const cfgPath = path.join(STATE_DIR, "openclaw.json");
   if (!exists(cfgPath)) return;
-  const pluginDir = path.join(STATE_DIR, "extensions", "trading-recipe");
-  if (exists(pluginDir)) return;
 
-  // trading-recipe depends on the llm-task plugin surface.
-  // Enable it before installing trading-recipe to avoid partial installs.
+  // trading-recipe depends on the llm-task plugin surface. Run on every boot when
+  // trading is enabled — not only on first install (early return below skipped this).
   const enableLlmTask = spawnSync("openclaw", ["plugins", "enable", "llm-task"], {
     env: { ...process.env, OPENCLAW_STATE_DIR: STATE_DIR },
     stdio: "pipe",
@@ -441,6 +440,9 @@ function installTradingRecipePluginIfNeeded() {
     // Continue; failing to enable llm-task should not necessarily block
     // the wrapper boot in environments that already have it enabled.
   }
+
+  const pluginDir = path.join(STATE_DIR, "extensions", "trading-recipe");
+  if (exists(pluginDir)) return;
 
   ensureDir(path.join(STATE_DIR, "extensions"));
   const result = spawnSync(
