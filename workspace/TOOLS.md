@@ -60,34 +60,6 @@ Param: `{ "name": "JobName" }`
 
 List all active cron jobs. No params needed.
 
-## Senpi runtime
-
-The `@senpi-ai/runtime` plugin is installed by bootstrap when enabled.
-State is persisted at `/data/.openclaw/senpi-state/`.
-
-### Manage runtimes
-
-```bash
-# List installed runtimes
-openclaw senpi runtime list
-
-# Add a runtime from a YAML file (hot-loads, no restart needed)
-openclaw senpi runtime create -p /path/to/strategy.yaml
-
-# Remove a runtime by id
-openclaw senpi runtime delete <runtime-id>
-```
-
-### In-shell reference
-
-```bash
-openclaw senpi guide           # overview
-openclaw senpi guide scanners  # scanner types and config fields
-openclaw senpi guide dsl       # DSL exit engine
-openclaw senpi guide examples  # print minimal YAML
-openclaw senpi guide version   # plugin version
-```
-
 ## Token Refresh
 
 If Senpi calls fail with an auth error, the token has expired. Tell the user to provide a fresh token, then run:

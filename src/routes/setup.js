@@ -531,12 +531,6 @@ export function createSetupRouter() {
     try {
       process.env.SENPI_AUTH_TOKEN = newToken;
 
-      const configDir = path.join(STATE_DIR, "config");
-      const senpiTokenPath = path.join(configDir, "senpi.token");
-      fs.mkdirSync(configDir, { recursive: true });
-      fs.writeFileSync(senpiTokenPath, newToken);
-      console.log("[senpi-token] Persisted token to config/senpi.token");
-
       const mcporterPath =
         process.env.MCPORTER_CONFIG ||
         path.join(STATE_DIR, "config", "mcporter.json");
