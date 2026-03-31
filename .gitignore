@@ -19,4 +19,3 @@ npm-debug.log*
 .tmpdata/
 .memory-bank/
 .cursor/
-design/*
