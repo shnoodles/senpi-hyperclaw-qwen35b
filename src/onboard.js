@@ -515,8 +515,6 @@ console.log(`[auto-onboard] directory created`);
         const mergedAllowFrom = rawMerged.some((id) => id !== "*") ? rawMerged.filter((id) => id !== "*") : rawMerged;
         const cfgObj = {
           enabled: true,
-          dmPolicy: resolvedId ? "allowlist" : "pairing",
-          allowFrom: resolvedId ? [resolvedId] : ["*"],
           dmPolicy: mergedAllowFrom.length > 0 ? "allowlist" : "pairing",
           ...(mergedAllowFrom.length > 0 ? { allowFrom: mergedAllowFrom } : {}),
           botToken: TELEGRAM_BOT_TOKEN,
