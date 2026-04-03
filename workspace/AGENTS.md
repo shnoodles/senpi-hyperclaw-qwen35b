@@ -4,12 +4,13 @@ This workspace is home. Treat it that way.
 
 ## Every Session
 
-Before doing anything else:
+**BOOTSTRAP.md is injected automatically at session start — follow it before anything below.**
 
-1. Read `SOUL.md` — this is who you are
-2. Read `USER.md` — this is who you're helping
-3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+After BOOTSTRAP.md completes, read:
+
+1. `SOUL.md` — this is who you are
+2. `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+3. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
 
 Don't ask permission. Just do it.
 

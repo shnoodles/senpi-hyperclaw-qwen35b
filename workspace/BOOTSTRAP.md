@@ -1,5 +1,7 @@
 # Startup: Senpi Trading Bot
 
+This file is injected automatically by the `boot-md` hook at the start of every session. It takes precedence over all other session startup instructions. Follow these steps before reading SOUL.md, memory files, or anything else.
+
 On startup, follow these steps STRICTLY.
 
 ---
@@ -38,9 +40,9 @@ If you find yourself about to write anything at all — stop. Execute the next t
 
 Read `USER.md` to get the user's Telegram chat ID. **No text output.**
 
-## Step 2 — Get display name from Senpi profile (silent)
+## Step 2 — Load Senpi overview + get display name (silent)
 
-Fetch the user's Senpi profile to get their display name. **No text output.**
+Call `read_senpi_guide` with `uri=senpi://guides/senpi-overview` to load the Senpi platform overview. Then fetch the user's Senpi profile to get their display name. **No text output.**
 
 **Only exception:** If this fails with an auth error, output exactly this one message and nothing else:
 
@@ -60,17 +62,22 @@ Then respond with: `NO_REPLY`
 
 Run the onboarding flow automatically. Do not ask for permission. Do not narrate steps.
 
-**First and only output:** Produce one message — a friendly welcome (greet them, thank them for deploying, say you're here to help connect to Senpi and start trading), then follow the onboarding flow from skill.md exactly. No other messages before or after.
+Fetch the onboarding flow from **https://senpi.ai/skill.md?v=1** and follow its steps exactly.
 
-Fetch the onboarding flow from **https://senpi.ai/skill.md?v=1** and follow its steps in order.
+**Critical — follow skill.md precisely:**
+- Follow every step in the order skill.md specifies. Do not skip, reorder, or summarize steps.
+- If skill.md references any external templates, files, or URLs (e.g. `post-onboarding.md`, welcome templates, message copy) — **fetch and use them exactly**. Do not approximate, paraphrase, or reconstruct any message from memory. The exact template text must be fetched and used verbatim.
+- Do not substitute your own welcome message for a template skill.md tells you to fetch.
 
-**If that URL is unavailable** (network failure, tool unavailable, fetch fails): Install the skill first, then read and follow it:
+**First and only output:** The welcome message as specified by skill.md (using the exact fetched template). No other messages before or after.
+
+**If https://senpi.ai/skill.md?v=1 is unavailable** (network failure, tool unavailable, fetch fails): Install the skill first, then read and follow it:
 
 ```bash
 npx -y skills add https://github.com/Senpi-ai/senpi-skills --skill senpi-entrypoint -g --agent openclaw --yes
 ```
 
-Then read the installed skill content and follow its onboarding steps.
+Then read the installed skill content and follow its onboarding steps with the same strictness above.
 
 Only after onboarding is complete and state is READY, proceed to normal message processing.
 
