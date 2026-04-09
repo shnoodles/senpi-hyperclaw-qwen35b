@@ -54,8 +54,8 @@ for i in $(seq 0 $(($AGENT_COUNT - 1))); do
   echo ""
 
   # Step 2: Add GitHub repo as service
-  echo "   📦 Adding service..."
-  railway add --repo "$REPO" --service "$AGENT_NAME"
+  echo "   📦 Adding service from GitHub..."
+  railway add -s "$AGENT_NAME" -r "$REPO"
 
   # Step 3: Link to the new service
   railway service "$AGENT_NAME"
