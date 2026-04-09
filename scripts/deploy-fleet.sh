@@ -53,9 +53,9 @@ for i in $(seq 0 $(($AGENT_COUNT - 1))); do
   railway init --name "$AGENT_NAME"
   echo ""
 
-  # Step 2: Add GitHub repo as service
+  # Step 2: Add GitHub repo as service (pipe empty input to skip variable prompt)
   echo "   📦 Adding service from GitHub..."
-  railway add -s "$AGENT_NAME" -r "$REPO"
+  echo "" | railway add -s "$AGENT_NAME" -r "$REPO"
 
   # Step 3: Link to the new service
   railway service "$AGENT_NAME"
