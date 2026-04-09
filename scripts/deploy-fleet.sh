@@ -19,7 +19,7 @@ set -uo pipefail
 CONFIG_FILE="${1:-scripts/fleet-config.json}"
 REPO="shnoodles/senpi-hyperclaw-railway-template"
 BRANCH="main"
-API="https://backboard.railway.com/graphql/v2"
+API="https://backboard.railway.app/graphql/v2"
 
 # ── Preflight ──
 command -v jq &>/dev/null || { echo "❌ jq not found. brew install jq"; exit 1; }
