@@ -60,6 +60,7 @@ Set `AI_PROVIDER` to one of the following values, and put the corresponding API 
 | `kimi-code` | Kimi Code | Kimi Code API key |
 | `zai` | Z.AI (GLM 4.7) | Z.AI API key |
 | `minimax` | MiniMax (M2.1) | MiniMax API key |
+| `together` | Together AI (Qwen, Llama, DeepSeek) | Together API key |
 | `synthetic` | Synthetic (Anthropic-compatible) | Synthetic API key |
 | `opencode-zen` | OpenCode Zen (multi-model proxy) | OpenCode Zen API key |
 
@@ -68,6 +69,13 @@ Set `AI_PROVIDER` to one of the following values, and put the corresponding API 
 ```
 AI_PROVIDER=anthropic
 AI_API_KEY=sk-ant-your-key-here
+```
+
+**Example** (Together AI — Qwen 3.5):
+
+```
+AI_PROVIDER=together
+AI_API_KEY=your-together-api-key
 ```
 
 ## Getting a Telegram bot token

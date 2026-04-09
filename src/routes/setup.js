@@ -103,6 +103,12 @@ const AUTH_GROUPS = [
     ],
   },
   {
+    value: "together",
+    label: "Together AI",
+    hint: "Qwen 3.5, Llama, DeepSeek + more",
+    options: [{ value: "together-api-key", label: "Together AI API key" }],
+  },
+  {
     value: "qwen",
     label: "Qwen",
     hint: "OAuth",
