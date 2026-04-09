@@ -58,7 +58,7 @@ export const PROVIDER_TO_AUTH_CHOICE = {
   zai: "zai-api-key",
   venice: "venice-api-key",
   minimax: "minimax-api",
-  together: "openai-api-key",
+  together: "together-api-key",
   synthetic: "synthetic-api-key",
   "opencode-zen": "opencode-zen",
 };

@@ -168,7 +168,7 @@ export const PROVIDER_DEFAULTS = [
   { key: "XAI_API_KEY", model: "xai/grok-3" },
   { key: "MISTRAL_API_KEY", model: "mistral/mistral-large-latest" },
   { key: "GROQ_API_KEY", model: "groq/llama-3.3-70b" },
-  { key: "TOGETHER_API_KEY", model: "together/Qwen/Qwen3.5-27B" },
+  { key: "TOGETHER_API_KEY", model: "together/moonshotai/Kimi-K2.5" },
   { key: "ZAI_API_KEY", model: "zai/glm-5" },
   { key: "MOONSHOT_API_KEY", model: "moonshot/kimi-k2.5" },
   { key: "VENICE_API_KEY", model: "venice/llama-3.3-70b" },
@@ -190,5 +190,5 @@ export const AI_PROVIDER_MODEL_MAP = {
   venice: "venice/llama-3.3-70b",
   mistral: "mistral/mistral-large-latest",
   minimax: "minimax/MiniMax-M2.1",
-  together: "together/Qwen/Qwen3.5-27B",
+  together: "together/moonshotai/Kimi-K2.5",
 };

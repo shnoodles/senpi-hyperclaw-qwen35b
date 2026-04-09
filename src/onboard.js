@@ -322,6 +322,7 @@ export function buildOnboardArgs(payload, gatewayToken) {
       "venice-api-key": "--venice-api-key",
       "minimax-api": "--minimax-api-key",
       "minimax-api-lightning": "--minimax-api-key",
+      "together-api-key": "--together-api-key",
       "synthetic-api-key": "--synthetic-api-key",
       "opencode-zen": "--opencode-zen-api-key",
       "venice-api-key": "--venice-api-key",
