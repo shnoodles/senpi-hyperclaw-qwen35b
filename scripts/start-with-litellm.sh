@@ -83,11 +83,4 @@ echo "    Model:     $AI_MODEL"
 #    (This calls whatever your existing startup script does)
 # ---------------------------------------------------------------------------
 echo "[→] Starting OpenClaw gateway..."
-if [ -f /app/scripts/start.sh ]; then
-  exec /app/scripts/start.sh
-elif [ -f /app/entrypoint.sh ]; then
-  exec /app/entrypoint.sh
-else
-  # Fallback: run the node app directly
-  exec node /app/src/index.js
-fi
+exec node /app/src/server.js
