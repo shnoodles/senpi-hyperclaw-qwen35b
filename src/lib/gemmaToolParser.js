@@ -2,12 +2,21 @@
  * Gemma 4 Tool-Call Parser Proxy
  *
  * Sits between OpenClaw and the upstream OpenAI-compatible LLM endpoint.
- * Forwards requests as-is, but on the response side, detects Gemma 4's
- * native tool-call tokens in message.content and converts them into
- * standard OpenAI tool_calls objects.
+ *
+ * TWO-WAY CONVERSION:
+ *
+ * REQUEST direction (OpenAI tools → Gemma 4 native prompt):
+ *   Takes the `tools` array from the OpenAI request and injects them into
+ *   the system message using Gemma 4's native tool format. This is necessary
+ *   because the upstream vLLM doesn't have --enable-auto-tool-choice
+ *   --tool-call-parser gemma4 flags, so it ignores the `tools` array.
+ *
+ * RESPONSE direction (Gemma 4 native tool calls → OpenAI tool_calls):
+ *   Detects Gemma 4's native tool-call tokens in message.content and converts
+ *   them into standard OpenAI tool_calls objects.
  *
  * Gemma 4 tool-call format:
- *   <|tool_call>call:function_name{key1:<|"|>string_val<|"|>,key2:123}<tool_call|>
+ *   <|tool_call|>call:function_name{key1:<|"|>string_val<|"|>,key2:123}<tool_call|>
  *
  * This proxy converts that into:
  *   message.tool_calls = [{ id: "call_xxx", type: "function", function: { name, arguments } }]
@@ -223,6 +232,140 @@ function processResponse(responseBody) {
   return responseBody;
 }
 
+// ─── REQUEST direction: Inject tools into Gemma 4 native prompt format ──────
+
+/**
+ * Convert an OpenAI JSON schema property to a human-readable description.
+ */
+function describeParam(name, schema, required) {
+  const type = schema.type || "any";
+  const desc = schema.description ? ` — ${schema.description}` : "";
+  const req = required ? " (required)" : " (optional)";
+  const enumVals = schema.enum ? ` [one of: ${schema.enum.join(", ")}]` : "";
+  return `  - ${name} (${type}${req})${enumVals}${desc}`;
+}
+
+/**
+ * Convert OpenAI tools array into Gemma 4's native tool-use prompt text.
+ *
+ * The format follows what vLLM's gemma4 tool parser uses when
+ * --enable-auto-tool-choice --tool-call-parser gemma4 is set.
+ * We replicate it here client-side since the upstream vLLM lacks those flags.
+ */
+function toolsToGemmaPrompt(tools) {
+  if (!tools || tools.length === 0) return "";
+
+  const lines = [
+    "You have access to the following tools. To call a tool, use this exact format:",
+    "",
+    "<|tool_call|>call:TOOL_NAME{param1:<|\"|>string_value<|\"|>,param2:number_value}<tool_call|>",
+    "",
+    "For string values, always wrap them with <|\"|> delimiters. For numbers, booleans, and null, use bare values.",
+    "You can call multiple tools in one response. Always use tools when the user asks for real-time data, to execute actions, or to read/write files.",
+    "",
+    "Available tools:",
+    "",
+  ];
+
+  for (const tool of tools) {
+    const fn = tool.function || tool;
+    if (!fn.name) continue;
+
+    lines.push(`Tool: ${fn.name}`);
+    if (fn.description) {
+      lines.push(`Description: ${fn.description}`);
+    }
+
+    const params = fn.parameters;
+    if (params && params.properties) {
+      const required = new Set(params.required || []);
+      lines.push("Parameters:");
+      for (const [pName, pSchema] of Object.entries(params.properties)) {
+        lines.push(describeParam(pName, pSchema, required.has(pName)));
+      }
+    }
+    lines.push("");
+  }
+
+  // Add tool_result format explanation so model knows how to handle responses
+  lines.push("When you receive a tool result, it will be in the format:");
+  lines.push("<|tool_result|>result_content<tool_result|>");
+  lines.push("");
+  lines.push("IMPORTANT: You MUST use tools to answer questions about real-time data, files, or system state. Do NOT hallucinate or make up data. If you need information, call the appropriate tool first.");
+  lines.push("");
+
+  return lines.join("\n");
+}
+
+/**
+ * Convert tool_call messages in the conversation history to Gemma 4 native format,
+ * and convert tool result messages to the expected format.
+ */
+function convertMessagesForGemma(messages, tools) {
+  if (!messages || !Array.isArray(messages)) return messages;
+
+  const toolPrompt = toolsToGemmaPrompt(tools);
+  const converted = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = { ...messages[i] };
+
+    // Inject tool definitions into the system message
+    if (msg.role === "system" && i === 0 && toolPrompt) {
+      msg.content = (msg.content || "") + "\n\n" + toolPrompt;
+      converted.push(msg);
+      continue;
+    }
+
+    // Convert assistant messages with tool_calls to Gemma 4 native format
+    if (msg.role === "assistant" && msg.tool_calls && msg.tool_calls.length > 0) {
+      let content = msg.content || "";
+      for (const tc of msg.tool_calls) {
+        const fn = tc.function;
+        if (!fn) continue;
+        let argsStr = "";
+        try {
+          const args = typeof fn.arguments === "string" ? JSON.parse(fn.arguments) : fn.arguments;
+          const parts = [];
+          for (const [k, v] of Object.entries(args || {})) {
+            if (typeof v === "string") {
+              parts.push(`${k}:<|"|>${v}<|"|>`);
+            } else {
+              parts.push(`${k}:${JSON.stringify(v)}`);
+            }
+          }
+          argsStr = parts.join(",");
+        } catch {
+          argsStr = fn.arguments || "";
+        }
+        content += `\n<|tool_call|>call:${fn.name}{${argsStr}}<tool_call|>`;
+      }
+      converted.push({ role: "assistant", content: content.trim() });
+      continue;
+    }
+
+    // Convert tool result messages to Gemma 4 format
+    if (msg.role === "tool") {
+      const toolContent = msg.content || "";
+      // Gemma 4 expects tool results as a user message with special formatting
+      converted.push({
+        role: "user",
+        content: `<|tool_result|>${toolContent}<tool_result|>`,
+      });
+      continue;
+    }
+
+    converted.push(msg);
+  }
+
+  // If there was no system message but we have tools, prepend one
+  if (toolPrompt && (converted.length === 0 || converted[0].role !== "system")) {
+    converted.unshift({ role: "system", content: toolPrompt });
+  }
+
+  return converted;
+}
+
 /**
  * Convert a non-streaming response to SSE format.
  */
@@ -287,7 +430,7 @@ export function startGemmaToolParser(upstreamBaseUrl, upstreamApiKey) {
         return;
       }
 
-      // POST /v1/chat/completions — intercept response
+      // POST /v1/chat/completions — intercept BOTH request and response
       if (req.method === "POST" && (url.includes("/chat/completions") || url === "/")) {
         let body = "";
         for await (const chunk of req) body += chunk;
@@ -300,12 +443,23 @@ export function startGemmaToolParser(upstreamBaseUrl, upstreamApiKey) {
           openaiReq.stream = false;
           delete openaiReq.stream_options;
 
-          // Log tool info
-          const toolCount = (openaiReq.tools || []).length;
+          // ── REQUEST CONVERSION ──────────────────────────────────────
+          // Convert OpenAI tools to Gemma 4 native prompt format
+          const tools = openaiReq.tools || [];
+          const toolCount = tools.length;
+
           if (toolCount > 0) {
             console.log(
-              `[gemma-tool-parser] → upstream with ${toolCount} tools: ${openaiReq.tools.map((t) => t?.function?.name).join(", ")}`
+              `[gemma-tool-parser] → Converting ${toolCount} tools to Gemma native prompt: ${tools.map((t) => t?.function?.name).join(", ")}`
             );
+
+            // Convert messages to include tool definitions in system prompt
+            // and convert tool_call/tool_result messages to native format
+            openaiReq.messages = convertMessagesForGemma(openaiReq.messages, tools);
+
+            // Remove the tools array — upstream vLLM doesn't handle it
+            delete openaiReq.tools;
+            delete openaiReq.tool_choice;
           }
 
           const controller = new AbortController();
@@ -332,6 +486,7 @@ export function startGemmaToolParser(upstreamBaseUrl, upstreamApiKey) {
 
           let result = JSON.parse(upText);
 
+          // ── RESPONSE CONVERSION ─────────────────────────────────────
           // Parse Gemma 4 tool calls from content
           result = processResponse(result);
 
@@ -386,4 +541,4 @@ export function stopGemmaToolParser() {
 }
 
 // Export parser for testing
-export { extractToolCalls, parseGemmaArgs };
+export { extractToolCalls, parseGemmaArgs, toolsToGemmaPrompt, convertMessagesForGemma };
