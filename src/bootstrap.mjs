@@ -350,6 +350,23 @@ function patchOpenClawJson() {
     console.log("[bootstrap] Together AI provider configured with Qwen3.5 models");
   }
 
+  // Register Gemma models with Vertex proxy (OpenAI-compatible via Railway proxy)
+  if (process.env.AI_PROVIDER?.trim()?.toLowerCase() === "vertex") {
+    const proxyUrl = process.env.VERTEX_PROXY_URL || "https://vertex-openai-proxy-production.up.railway.app/v1";
+    merged.models = merged.models || {};
+    merged.models.mode = "merge";
+    merged.models.providers = merged.models.providers || {};
+    merged.models.providers.vertex = merged.models.providers.vertex || {
+      baseUrl: proxyUrl,
+      apiKey: "${VERTEX_API_KEY}",
+      api: "openai-completions",
+      models: [
+        { id: "gemma-4-31b-it", name: "Gemma 4 31B", reasoning: false, contextWindow: 131072, maxTokens: 8192 },
+      ],
+    };
+    console.log(`[bootstrap] Vertex AI provider configured via proxy at ${proxyUrl}`);
+  }
+
   // Always rewrite agents.list so profile/alsoAllow fixes take effect on every redeploy.
   // Find and patch the main agent entry if it exists; otherwise set the full default list.
   if (!Array.isArray(merged.agents.list) || merged.agents.list.length === 0) {

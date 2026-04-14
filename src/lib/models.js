@@ -34,6 +34,7 @@ export const DESIRED_MODELS = {
 
   // ── Google Gemma ──
   "google/gemma-4-31b-it": { alias: "Gemma 4 31B" },
+  "vertex/gemma-4-31b-it": { alias: "Gemma 4 31B (Vertex)" },
   "google/gemma-4-26b-a4b-it": { alias: "Gemma 4 26B MoE" },
   "google/gemma-4-e4b-it": { alias: "Gemma 4 E4B" },
 
@@ -202,4 +203,5 @@ export const AI_PROVIDER_MODEL_MAP = {
   mistral: "mistral/mistral-large-latest",
   minimax: "minimax/MiniMax-M2.1",
   together: "together/Qwen/Qwen3.5-27B",
+  vertex: "vertex/gemma-4-31b-it",
 };
