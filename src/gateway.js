@@ -230,6 +230,19 @@ export async function startGateway(gatewayToken) {
       "true",
     ])
   );
+  // Allow external WebSocket origins (Control UI, test runners, etc.)
+  const allowedOrigins = process.env.GATEWAY_ALLOWED_ORIGINS || '["*"]';
+  await runCmd(
+    OPENCLAW_NODE,
+    clawArgs([
+      "config",
+      "set",
+      "--json",
+      "gateway.controlUi.allowedOrigins",
+      allowedOrigins,
+    ])
+  );
+  console.log(`[gateway] Set gateway.controlUi.allowedOrigins=${allowedOrigins}`);
   const verify = JSON.parse(fs.readFileSync(configPath(), "utf8"));
   const devAuth = verify?.gateway?.controlUi?.dangerouslyDisableDeviceAuth;
   console.log(
