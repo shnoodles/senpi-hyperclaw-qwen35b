@@ -23,6 +23,7 @@ import {
   startAutoApprovalLoop,
   stopAutoApprovalLoop,
 } from "./lib/deviceAuth.js";
+import { startGemmaToolParser } from "./lib/gemmaToolParser.js";
 
 const MCPORTER_CONFIG = path.join(STATE_DIR, "config", "mcporter.json");
 
@@ -264,6 +265,34 @@ export async function startGateway(gatewayToken) {
     console.warn(
       `[gateway] WARNING: dangerouslyDisableDeviceAuth is ${devAuth} — cron/agent may get 1008 pairing required`
     );
+  }
+
+  // ── Gemma 4 Tool-Call Parser Proxy ──────────────────────────────────────
+  // If AI_PROVIDER=vertex, start a local proxy that intercepts LLM responses
+  // and converts Gemma 4's native <|tool_call> tokens into OpenAI tool_calls.
+  // OpenClaw → gemmaToolParser (localhost:7299) → upstream vertex proxy → Vertex AI
+  if (process.env.AI_PROVIDER?.trim()?.toLowerCase() === "vertex") {
+    const upstreamUrl = process.env.VERTEX_PROXY_URL || "https://vertex-openai-proxy-production.up.railway.app/v1";
+    const upstreamKey = process.env.VERTEX_API_KEY || process.env.AI_API_KEY || "";
+    try {
+      const localProxyUrl = await startGemmaToolParser(upstreamUrl, upstreamKey);
+      console.log(`[gateway] Gemma tool-parser proxy started at ${localProxyUrl}`);
+      // Patch OpenClaw config to route through local parser proxy instead of upstream
+      await runCmd(
+        OPENCLAW_NODE,
+        clawArgs([
+          "config",
+          "set",
+          "--json",
+          "models.providers.vertex.baseUrl",
+          `"${localProxyUrl}"`,
+        ])
+      );
+      console.log(`[gateway] Patched models.providers.vertex.baseUrl → ${localProxyUrl}`);
+    } catch (err) {
+      console.error(`[gateway] Gemma tool-parser proxy failed to start: ${err.message}`);
+      console.error(`[gateway] Falling back to direct upstream connection`);
+    }
   }
 
   const args = [

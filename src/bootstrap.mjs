@@ -366,7 +366,7 @@ function patchOpenClawJson() {
       apiKey: "${VERTEX_API_KEY}",
       api: "openai-completions",
       models: [
-        { id: "gemma-4-31b-it", name: "Gemma 4 31B", reasoning: false, contextWindow: 131072, maxTokens: 8192 },
+        { id: "gemma-4-31b-it", name: "Gemma 4 31B", reasoning: false, contextWindow: 131072, maxTokens: 8192, compat: { supportsTools: true } },
       ],
     };
     console.log(`[bootstrap] Vertex AI provider configured via proxy at ${proxyUrl}`);
