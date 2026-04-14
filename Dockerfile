@@ -37,9 +37,26 @@ RUN set -eux; \
   done
 
 # Disable minimumReleaseAge so freshly-published transitive deps don't block the build.
-# The project .npmrc may set this; override it at the project level.
-RUN sed -i 's/minimum-release-age=.*/minimum-release-age=0/' .npmrc 2>/dev/null; \
-    grep -q 'minimum-release-age' .npmrc 2>/dev/null || echo 'minimum-release-age=0' >> .npmrc; \
+# Nuclear approach: patch .npmrc, package.json, and set env var to cover all config sources.
+RUN set -eux; \
+    # 1. Rewrite .npmrc: remove any existing minimum-release-age line, then add =0
+    sed -i '/minimum-release-age/d' .npmrc 2>/dev/null || true; \
+    echo 'minimum-release-age=0' >> .npmrc; \
+    # 2. Patch package.json to remove pnpm.minimumReleaseAge if present (camelCase or kebab)
+    node -e " \
+      const fs = require('fs'); \
+      const p = JSON.parse(fs.readFileSync('package.json','utf8')); \
+      if (p.pnpm) { \
+        delete p.pnpm.minimumReleaseAge; \
+        delete p.pnpm['minimum-release-age']; \
+      } \
+      fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n'); \
+    " 2>/dev/null || true; \
+    # 3. Also patch any nested .npmrc files in extensions/
+    find . -name '.npmrc' -type f -exec sed -i '/minimum-release-age/d' {} \; ; \
+    find . -name '.npmrc' -type f -exec sh -c 'echo "minimum-release-age=0" >> "$1"' _ {} \; ; \
+    # 4. Set env var as final fallback
+    export npm_config_minimum_release_age=0; \
     pnpm install --no-frozen-lockfile
 RUN pnpm build
 ENV OPENCLAW_PREFER_PNPM=1
