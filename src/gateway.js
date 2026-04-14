@@ -231,18 +231,30 @@ export async function startGateway(gatewayToken) {
     ])
   );
   // Allow external WebSocket origins (Control UI, test runners, etc.)
+  // Use --strict-json for array values (OpenClaw CLI requirement for non-scalar JSON).
   const allowedOrigins = process.env.GATEWAY_ALLOWED_ORIGINS || '["*"]';
   await runCmd(
     OPENCLAW_NODE,
     clawArgs([
       "config",
       "set",
-      "--json",
       "gateway.controlUi.allowedOrigins",
       allowedOrigins,
+      "--strict-json",
     ])
   );
-  console.log(`[gateway] Set gateway.controlUi.allowedOrigins=${allowedOrigins}`);
+  // Also enable Host-header fallback as a belt-and-suspenders approach for Railway reverse proxy
+  await runCmd(
+    OPENCLAW_NODE,
+    clawArgs([
+      "config",
+      "set",
+      "--json",
+      "gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback",
+      "true",
+    ])
+  );
+  console.log(`[gateway] Set gateway.controlUi.allowedOrigins=${allowedOrigins} + Host-header fallback enabled`);
   const verify = JSON.parse(fs.readFileSync(configPath(), "utf8"));
   const devAuth = verify?.gateway?.controlUi?.dangerouslyDisableDeviceAuth;
   console.log(
