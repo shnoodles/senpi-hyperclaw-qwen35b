@@ -36,30 +36,19 @@ RUN set -eux; \
     sed -i -E 's/"openclaw"[[:space:]]*:[[:space:]]*"workspace:[^"]+"/"openclaw": "*"/g' "$f"; \
   done
 
-# Disable minimumReleaseAge completely.
-# Set the env var BEFORE the RUN so it's available to the entire pnpm process tree.
-ENV npm_config_minimum_release_age=0
+# Disable minimumReleaseAge — pnpm v10 reads this from pnpm-workspace.yaml, not .npmrc.
 RUN set -eux; \
-    # Remove all minimum-release-age settings from every .npmrc in the tree
-    find . -name '.npmrc' -type f -exec sed -i '/minimum.release.age/Id' {} \; ; \
-    # Remove from package.json pnpm config
+    # Patch pnpm-workspace.yaml: remove minimumReleaseAge or set to 0
     node -e " \
       const fs=require('fs'); \
-      const p=JSON.parse(fs.readFileSync('package.json','utf8')); \
-      if(p.pnpm){delete p.pnpm.minimumReleaseAge;delete p.pnpm['minimum-release-age'];} \
-      fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n'); \
-    " 2>/dev/null || true; \
-    # Ensure .npmrc has the override
+      let yaml=fs.readFileSync('pnpm-workspace.yaml','utf8'); \
+      yaml=yaml.replace(/^\s*minimumReleaseAge\s*:.*/gm,'minimumReleaseAge: 0 seconds'); \
+      fs.writeFileSync('pnpm-workspace.yaml',yaml); \
+      console.log('Patched pnpm-workspace.yaml'); \
+    "; \
+    # Also patch .npmrc as fallback
+    sed -i '/minimum.release.age/Id' .npmrc 2>/dev/null || true; \
     echo 'minimum-release-age=0' >> .npmrc; \
-    # Also add pnpm-specific overrides to force-resolve follow-redirects
-    node -e " \
-      const fs=require('fs'); \
-      const p=JSON.parse(fs.readFileSync('package.json','utf8')); \
-      p.pnpm=p.pnpm||{}; \
-      p.pnpm.overrides=p.pnpm.overrides||{}; \
-      p.pnpm.overrides['follow-redirects']='>=1.15.0'; \
-      fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n'); \
-    " 2>/dev/null || true; \
     pnpm install --no-frozen-lockfile
 RUN pnpm build
 ENV OPENCLAW_PREFER_PNPM=1
