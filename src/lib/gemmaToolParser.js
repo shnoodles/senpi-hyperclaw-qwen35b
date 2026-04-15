@@ -182,8 +182,10 @@ function extractToolCalls(content) {
   //    Only match known function-call patterns at line start or after whitespace/newline.
   //    Must have at least one letter in the name to avoid false positives.
   if (toolCalls.length === 0) {
-    const BARE_RE = /(?:^|\n|^)call:([a-zA-Z_][a-zA-Z0-9_.]*)\{(.*?)\}/gs;
+    console.log(`[gemma-tool-parser] Trying bare format detection on: ${content.slice(0, 200)}`);
+    const BARE_RE = /(?:^|\n)call:([a-zA-Z_][a-zA-Z0-9_.]*)\{(.*?)\}/gs;
     tryRegex(BARE_RE);
+    console.log(`[gemma-tool-parser] Bare format found ${toolCalls.length} tool call(s)`);
   }
 
   if (toolCalls.length === 0) return null;
@@ -485,7 +487,11 @@ export function startGemmaToolParser(upstreamBaseUrl, upstreamApiKey) {
 
           // ── RESPONSE CONVERSION ─────────────────────────────────────
           // Parse Gemma 4 tool calls from content
+          const rawContent = result?.choices?.[0]?.message?.content || "";
+          console.log(`[gemma-tool-parser] ← Raw response content (${rawContent.length} chars): ${rawContent.slice(0, 300)}`);
           result = processResponse(result);
+          const hasToolCalls = result?.choices?.[0]?.message?.tool_calls?.length > 0;
+          console.log(`[gemma-tool-parser] ← After processResponse: hasToolCalls=${hasToolCalls}, finish_reason=${result?.choices?.[0]?.finish_reason}`);
 
           if (wantsStream) {
             res.writeHead(200, {
