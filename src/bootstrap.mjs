@@ -393,6 +393,22 @@ function patchOpenClawJson() {
     console.log(`[bootstrap] Vercel AI Gateway provider configured at ${gatewayUrl} (ai-gateway + vercel-ai-gateway)`);
   }
 
+  // Register Novita.ai models (OpenAI-compatible)
+  if (process.env.AI_PROVIDER?.trim()?.toLowerCase() === "novita") {
+    merged.models = merged.models || {};
+    merged.models.mode = "merge";
+    merged.models.providers = merged.models.providers || {};
+    merged.models.providers.novita = merged.models.providers.novita || {
+      baseUrl: "https://api.novita.ai/openai",
+      apiKey: "${AI_API_KEY}",
+      api: "openai-completions",
+      models: [
+        { id: "qwen/qwen3.5-35b-a3b", name: "Qwen3.5 35B A3B (Novita)", reasoning: false, contextWindow: 131072, maxTokens: 8192 },
+      ],
+    };
+    console.log("[bootstrap] Novita.ai provider configured with Qwen3.5 35B model");
+  }
+
   // Register Gemma models with Vertex proxy (OpenAI-compatible via Railway proxy)
   if (process.env.AI_PROVIDER?.trim()?.toLowerCase() === "vertex") {
     const proxyUrl = process.env.VERTEX_PROXY_URL || "https://vertex-openai-proxy-production.up.railway.app/v1";
