@@ -11,7 +11,7 @@ echo "================================================"
 # ---------------------------------------------------------------------------
 # 1. Vercel AI Gateway configuration
 # ---------------------------------------------------------------------------
-export VERCEL_AI_GATEWAY_URL="${VERCEL_AI_GATEWAY_URL:-https://api.vercel.ai/v1}"
+export VERCEL_AI_GATEWAY_URL="${VERCEL_AI_GATEWAY_URL:-https://ai-gateway.vercel.sh/v1}"
 echo "[✓] Vercel AI Gateway URL: $VERCEL_AI_GATEWAY_URL"
 
 if [ -n "$VERCEL_API_KEY" ]; then
