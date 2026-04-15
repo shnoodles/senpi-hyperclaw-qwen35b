@@ -146,40 +146,17 @@ function parseGemmaArgs(raw) {
  */
 function extractToolCalls(content) {
   if (!content || typeof content !== "string") return null;
-  if (!content.includes("<|tool_call") && !content.includes("tool_call|>")) return null;
 
   const toolCalls = [];
-  let remaining = content;
 
-  // Reset regex state
-  TOOL_CALL_RE.lastIndex = 0;
-
-  let match;
-  while ((match = TOOL_CALL_RE.exec(content)) !== null) {
-    const funcName = match[1].trim();
-    const argsRaw = match[2];
-    const args = parseGemmaArgs(argsRaw);
-
-    toolCalls.push({
-      id: `call_${crypto.randomBytes(12).toString("hex")}`,
-      type: "function",
-      function: {
-        name: funcName,
-        arguments: JSON.stringify(args),
-      },
-    });
-  }
-
-  if (toolCalls.length === 0) {
-    // Try alternative format: some versions use slightly different delimiters
-    // <|tool_call>call:name{args}<tool_call|>  (no pipe in opening, pipe in closing)
-    const ALT_RE = /<\|tool_call>call:([^{]+)\{(.*?)\}<tool_call\|>/gs;
-    let altMatch;
-    while ((altMatch = ALT_RE.exec(content)) !== null) {
-      const funcName = altMatch[1].trim();
-      const argsRaw = altMatch[2];
+  // Helper to push parsed tool calls
+  function tryRegex(re) {
+    re.lastIndex = 0;
+    let match;
+    while ((match = re.exec(content)) !== null) {
+      const funcName = match[1].trim();
+      const argsRaw = match[2];
       const args = parseGemmaArgs(argsRaw);
-
       toolCalls.push({
         id: `call_${crypto.randomBytes(12).toString("hex")}`,
         type: "function",
@@ -191,11 +168,30 @@ function extractToolCalls(content) {
     }
   }
 
+  // 1. Full delimiters: <|tool_call|>call:name{args}<tool_call|>
+  if (content.includes("<|tool_call") || content.includes("tool_call|>")) {
+    tryRegex(TOOL_CALL_RE);
+
+    if (toolCalls.length === 0) {
+      // Alt delimiters: <|tool_call>call:name{args}<tool_call|>
+      tryRegex(/<\|tool_call>call:([^{]+)\{(.*?)\}<tool_call\|>/gs);
+    }
+  }
+
+  // 2. Bare format (special tokens stripped by gateway): call:name{args}
+  //    Only match known function-call patterns at line start or after whitespace/newline.
+  //    Must have at least one letter in the name to avoid false positives.
+  if (toolCalls.length === 0) {
+    const BARE_RE = /(?:^|\n|^)call:([a-zA-Z_][a-zA-Z0-9_.]*)\{(.*?)\}/gs;
+    tryRegex(BARE_RE);
+  }
+
   if (toolCalls.length === 0) return null;
 
-  // Remove tool call tokens from content
-  remaining = content
+  // Remove tool call tokens/patterns from content
+  let remaining = content
     .replace(/<\|tool_call\|?>call:[^{]+\{.*?\}<\|?tool_call\|>/gs, "")
+    .replace(/(?:^|\n)call:[a-zA-Z_][a-zA-Z0-9_.]*\{.*?\}/gs, "")
     .trim();
 
   return { toolCalls, remainingContent: remaining || null };
@@ -258,9 +254,10 @@ function toolsToGemmaPrompt(tools) {
   const lines = [
     "You have access to the following tools. To call a tool, use this exact format:",
     "",
-    "<|tool_call|>call:TOOL_NAME{param1:<|\"|>string_value<|\"|>,param2:number_value}<tool_call|>",
+    "call:TOOL_NAME{param1:<|\"|>string_value<|\"|>,param2:number_value}",
     "",
     "For string values, always wrap them with <|\"|> delimiters. For numbers, booleans, and null, use bare values.",
+    "Each tool call must start on its own line with 'call:' prefix.",
     "You can call multiple tools in one response. Always use tools when the user asks for real-time data, to execute actions, or to read/write files.",
     "",
     "Available tools:",
@@ -288,10 +285,10 @@ function toolsToGemmaPrompt(tools) {
   }
 
   // Add tool_result format explanation so model knows how to handle responses
-  lines.push("When you receive a tool result, it will be in the format:");
-  lines.push("<|tool_result|>result_content<tool_result|>");
+  lines.push("When you receive a tool result, it will appear as a user message with the result data.");
   lines.push("");
-  lines.push("IMPORTANT: You MUST use tools to answer questions about real-time data, files, or system state. Do NOT hallucinate or make up data. If you need information, call the appropriate tool first.");
+  lines.push("IMPORTANT: You MUST use tools to answer questions about real-time data, portfolio, positions, prices, or system state. Do NOT hallucinate or make up data. If you need information, call the appropriate tool first.");
+  lines.push("IMPORTANT: Output ONLY the call: line for tool calls, with no extra text before or after. Do not wrap tool calls in code blocks or markdown.");
   lines.push("");
 
   return lines.join("\n");
