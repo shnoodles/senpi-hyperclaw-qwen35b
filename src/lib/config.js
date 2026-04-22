@@ -65,6 +65,7 @@ export const PROVIDER_TO_AUTH_CHOICE = {
   vertex: "openai-api-key",
   "vercel-ai-gateway": "openai-api-key",
   novita: "openai-api-key",
+  "senpi-qwen": "openai-api-key",
 };
 
 /** Providers that use ADC/OAuth instead of an API key (AI_API_KEY not required). */
@@ -81,6 +82,7 @@ export const PROVIDER_BASE_URL = {
   "vercel-ai-gateway": process.env.VERCEL_AI_GATEWAY_URL || "https://ai-gateway.vercel.sh/v1",
   "ai-gateway": process.env.VERCEL_AI_GATEWAY_URL || "https://ai-gateway.vercel.sh/v1",
   novita: "https://api.novita.ai/openai",
+  "senpi-qwen": process.env.SENPI_QWEN_BASE_URL || "https://senpi-vertex-proxy-production.up.railway.app/v1",
 };
 
 /**
@@ -108,6 +110,7 @@ const PROVIDER_API_KEY_ENV = {
   "vercel-ai-gateway": "VERCEL_API_KEY",
   "ai-gateway": "VERCEL_API_KEY",
   novita: "NOVITA_API_KEY",
+  "senpi-qwen": "SENPI_QWEN_API_KEY",
 };
 
 /**

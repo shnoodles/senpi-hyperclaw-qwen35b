@@ -409,6 +409,24 @@ function patchOpenClawJson() {
     console.log("[bootstrap] Novita.ai provider configured with Qwen3.5 35B model");
   }
 
+  // Register Senpi Qwen 3.5 122B on Vertex AI (OpenAI-compatible via Railway proxy)
+  if (process.env.AI_PROVIDER?.trim()?.toLowerCase() === "senpi-qwen") {
+    const proxyUrl = process.env.SENPI_QWEN_BASE_URL || "https://senpi-vertex-proxy-production.up.railway.app/v1";
+    merged.models = merged.models || {};
+    merged.models.mode = "merge";
+    merged.models.providers = merged.models.providers || {};
+    merged.models.providers["senpi-qwen"] = merged.models.providers["senpi-qwen"] || {
+      baseUrl: proxyUrl,
+      apiKey: "${AI_API_KEY}",
+      api: "openai-completions",
+      models: [
+        { id: "qwen3.5-122b", name: "Qwen3.5 122B (Senpi Vertex)", reasoning: true, contextWindow: 262144, maxTokens: 16384, compat: { supportsTools: true } },
+      ],
+    };
+    console.log(`[bootstrap] Senpi Qwen provider configured via proxy at ${proxyUrl}`);
+  }
+
+
   // Register Gemma models with Vertex proxy (OpenAI-compatible via Railway proxy)
   if (process.env.AI_PROVIDER?.trim()?.toLowerCase() === "vertex") {
     const proxyUrl = process.env.VERTEX_PROXY_URL || "https://vertex-openai-proxy-production.up.railway.app/v1";

@@ -172,6 +172,9 @@ export const DESIRED_MODELS = {
 
   // ── Novita.ai (OpenAI-compatible) ──
   "novita/qwen/qwen3.5-35b-a3b": { alias: "Qwen3.5 35B (Novita)" },
+
+  // ── Senpi Qwen (Vertex proxy, OpenAI-compatible) ──
+  "senpi-qwen/qwen3.5-122b": { alias: "Qwen3.5 122B (Senpi Vertex)" },
 };
 
 /**
@@ -192,6 +195,7 @@ export const PROVIDER_DEFAULTS = [
   { key: "VENICE_API_KEY", model: "venice/llama-3.3-70b" },
   { key: "OPENROUTER_API_KEY", model: "openrouter/anthropic/claude-sonnet-4-5" },
   { key: "NOVITA_API_KEY", model: "novita/qwen/qwen3.5-35b-a3b" },
+  { key: "SENPI_QWEN_API_KEY", model: "senpi-qwen/qwen3.5-122b" },
 ];
 
 /**
@@ -215,4 +219,5 @@ export const AI_PROVIDER_MODEL_MAP = {
   "vercel-ai-gateway": "vercel-ai-gateway/google/gemma-4-31b-it",
   "ai-gateway": "ai-gateway/google/gemma-4-31b-it",
   novita: "novita/qwen/qwen3.5-35b-a3b",
+  "senpi-qwen": "senpi-qwen/qwen3.5-122b",
 };

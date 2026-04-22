@@ -65,6 +65,7 @@ Set `AI_PROVIDER` to one of the following values, and put the corresponding API 
 | `synthetic` | Synthetic (Anthropic-compatible) | Synthetic API key |
 | `opencode-zen` | OpenCode Zen (multi-model proxy) | OpenCode Zen API key |
 | `novita` | Novita.ai (OpenAI-compatible, Qwen3.5 35B) | Novita.ai API key |
+| `senpi-qwen` | Senpi Qwen 3.5 122B via Vertex proxy | Proxy API key (sk-senpi-...) |
 
 **Example** (Novita.ai — default for this fork):
 
@@ -74,6 +75,16 @@ AI_API_KEY=your-novita-api-key-here
 ```
 
 The Novita.ai provider automatically routes requests to `https://api.novita.ai/openai` using the `qwen/qwen3.5-35b-a3b` model.
+
+**Example** (Senpi Qwen 3.5 on Vertex):
+
+```
+AI_PROVIDER=senpi-qwen
+AI_API_KEY=sk-senpi-your-proxy-key-here
+```
+
+Routes requests to `https://senpi-vertex-proxy-production.up.railway.app/v1` using the `qwen3.5-122b` model. Override the proxy URL with `SENPI_QWEN_BASE_URL`.
+
 
 **Example** (Anthropic):
 

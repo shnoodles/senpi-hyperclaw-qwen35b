@@ -164,6 +164,12 @@ const AUTH_GROUPS = [
     hint: "OpenAI-compatible (Qwen3.5 35B default)",
     options: [{ value: "openai-api-key", label: "Novita.ai API key" }],
   },
+  {
+    value: "senpi-qwen",
+    label: "Senpi Qwen 3.5 (Vertex)",
+    hint: "Qwen3.5 122B via Senpi Vertex proxy",
+    options: [{ value: "openai-api-key", label: "Senpi proxy API key (sk-senpi-...)" }],
+  },
 ];
 
 export function createSetupRouter() {
