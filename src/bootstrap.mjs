@@ -443,6 +443,23 @@ function patchOpenClawJson() {
     console.log(`[bootstrap] Senpi Qwen 27B provider configured via proxy at ${proxyUrl}`);
   }
 
+  // Register Senpi Gemma 4 31B IT on Vertex AI (OpenAI-compatible via Railway proxy)
+  if (process.env.AI_PROVIDER?.trim()?.toLowerCase() === "senpi-gemma-4") {
+    const proxyUrl = process.env.SENPI_GEMMA_4_BASE_URL || "https://hospitable-vibrancy-production.up.railway.app/v1";
+    merged.models = merged.models || {};
+    merged.models.mode = "merge";
+    merged.models.providers = merged.models.providers || {};
+    merged.models.providers["senpi-gemma-4"] = merged.models.providers["senpi-gemma-4"] || {
+      baseUrl: proxyUrl,
+      apiKey: "${AI_API_KEY}",
+      api: "openai-completions",
+      models: [
+        { id: "gemma-4-31b-it", name: "Gemma 4 31B IT (Senpi Vertex)", reasoning: false, contextWindow: 131072, maxTokens: 8192, compat: { supportsTools: true } },
+      ],
+    };
+    console.log(`[bootstrap] Senpi Gemma 4 provider configured via proxy at ${proxyUrl}`);
+  }
+
 
 
   // Register Gemma models with Vertex proxy (OpenAI-compatible via Railway proxy)

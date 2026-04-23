@@ -176,6 +176,7 @@ export const DESIRED_MODELS = {
   // ── Senpi Qwen (Vertex proxy, OpenAI-compatible) ──
   "senpi-qwen/qwen3.5-122b": { alias: "Qwen3.5 122B (Senpi Vertex)" },
   "senpi-qwen-27b/qwen3.5-27b": { alias: "Qwen3.5 27B (Senpi Vertex, dense)" },
+  "senpi-gemma-4/gemma-4-31b-it": { alias: "Gemma 4 31B IT (Senpi Vertex)" },
 };
 
 /**
@@ -198,6 +199,7 @@ export const PROVIDER_DEFAULTS = [
   { key: "NOVITA_API_KEY", model: "novita/qwen/qwen3.5-35b-a3b" },
   { key: "SENPI_QWEN_API_KEY", model: "senpi-qwen/qwen3.5-122b" },
   { key: "SENPI_QWEN_27B_API_KEY", model: "senpi-qwen-27b/qwen3.5-27b" },
+  { key: "SENPI_GEMMA_4_API_KEY", model: "senpi-gemma-4/gemma-4-31b-it" },
 ];
 
 /**
@@ -223,4 +225,5 @@ export const AI_PROVIDER_MODEL_MAP = {
   novita: "novita/qwen/qwen3.5-35b-a3b",
   "senpi-qwen": "senpi-qwen/qwen3.5-122b",
   "senpi-qwen-27b": "senpi-qwen-27b/qwen3.5-27b",
+  "senpi-gemma-4": "senpi-gemma-4/gemma-4-31b-it",
 };

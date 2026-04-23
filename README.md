@@ -67,6 +67,7 @@ Set `AI_PROVIDER` to one of the following values, and put the corresponding API 
 | `novita` | Novita.ai (OpenAI-compatible, Qwen3.5 35B) | Novita.ai API key |
 | `senpi-qwen` | Senpi Qwen 3.5 122B via Vertex proxy | Proxy API key (sk-senpi-...) |
 | `senpi-qwen-27b` | Senpi Qwen 3.5 27B (dense) via Vertex proxy | Proxy API key (sk-senpi-...) |
+| `senpi-gemma-4` | Senpi Gemma 4 31B (it) via Vertex proxy | Proxy API key (sk-senpi-...) |
 
 **Example** (Novita.ai — default for this fork):
 
