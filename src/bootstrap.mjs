@@ -443,6 +443,23 @@ function patchOpenClawJson() {
     console.log(`[bootstrap] Senpi Qwen 27B provider configured via proxy at ${proxyUrl}`);
   }
 
+  // Register Senpi Qwen 3.5 35B A3B (MoE) on Vertex AI (OpenAI-compatible via Railway proxy)
+  if (process.env.AI_PROVIDER?.trim()?.toLowerCase() === "senpi-qwen-35b") {
+    const proxyUrl = process.env.SENPI_QWEN_35B_BASE_URL || "https://qwen35b-production.up.railway.app/v1";
+    merged.models = merged.models || {};
+    merged.models.mode = "merge";
+    merged.models.providers = merged.models.providers || {};
+    merged.models.providers["senpi-qwen-35b"] = merged.models.providers["senpi-qwen-35b"] || {
+      baseUrl: proxyUrl,
+      apiKey: "${AI_API_KEY}",
+      api: "openai-completions",
+      models: [
+        { id: "qwen3.5-35b", name: "Qwen3.5 35B A3B (Senpi Vertex, MoE)", reasoning: true, contextWindow: 262144, maxTokens: 16384, compat: { supportsTools: true } },
+      ],
+    };
+    console.log(`[bootstrap] Senpi Qwen 35B provider configured via proxy at ${proxyUrl}`);
+  }
+
   // Register Senpi Gemma 4 31B IT on Vertex AI (OpenAI-compatible via Railway proxy)
   if (process.env.AI_PROVIDER?.trim()?.toLowerCase() === "senpi-gemma-4") {
     const proxyUrl = process.env.SENPI_GEMMA_4_BASE_URL || "https://hospitable-vibrancy-production.up.railway.app/v1";

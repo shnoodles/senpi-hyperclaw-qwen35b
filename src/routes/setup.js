@@ -177,6 +177,12 @@ const AUTH_GROUPS = [
     options: [{ value: "openai-api-key", label: "Senpi proxy API key (sk-senpi-...)" }],
   },
   {
+    value: "senpi-qwen-35b",
+    label: "Senpi Qwen 3.5 35B A3B (Vertex, MoE)",
+    hint: "Qwen3.5 35B A3B MoE via Senpi Vertex proxy",
+    options: [{ value: "openai-api-key", label: "Senpi proxy API key (sk-senpi-...)" }],
+  },
+  {
     value: "senpi-gemma-4",
     label: "Senpi Gemma 4 31B (Vertex)",
     hint: "Gemma 4 31B IT via Senpi Vertex proxy",

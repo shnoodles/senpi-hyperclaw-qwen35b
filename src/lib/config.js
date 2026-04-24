@@ -67,6 +67,7 @@ export const PROVIDER_TO_AUTH_CHOICE = {
   novita: "openai-api-key",
   "senpi-qwen": "openai-api-key",
   "senpi-qwen-27b": "openai-api-key",
+  "senpi-qwen-35b": "openai-api-key",
   "senpi-gemma-4": "openai-api-key",
 };
 
@@ -86,6 +87,7 @@ export const PROVIDER_BASE_URL = {
   novita: "https://api.novita.ai/openai",
   "senpi-qwen": process.env.SENPI_QWEN_BASE_URL || "https://senpi-vertex-proxy-production.up.railway.app/v1",
   "senpi-qwen-27b": process.env.SENPI_QWEN_27B_BASE_URL || "https://senpi-qwen27b-production.up.railway.app/v1",
+  "senpi-qwen-35b": process.env.SENPI_QWEN_35B_BASE_URL || "https://qwen35b-production.up.railway.app/v1",
   "senpi-gemma-4": process.env.SENPI_GEMMA_4_BASE_URL || "https://hospitable-vibrancy-production.up.railway.app/v1",
 };
 
@@ -116,6 +118,7 @@ const PROVIDER_API_KEY_ENV = {
   novita: "NOVITA_API_KEY",
   "senpi-qwen": "SENPI_QWEN_API_KEY",
   "senpi-qwen-27b": "SENPI_QWEN_27B_API_KEY",
+  "senpi-qwen-35b": "SENPI_QWEN_35B_API_KEY",
   "senpi-gemma-4": "SENPI_GEMMA_4_API_KEY",
 };
 
